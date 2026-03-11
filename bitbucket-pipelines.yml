@@ -1,0 +1,249 @@
+image: node:18
+
+definitions:
+  steps:
+    - step: &install-dependencies
+        name: Install Dependencies
+        caches:
+          - node
+        script:
+          - npm ci
+        artifacts:
+          - node_modules/**
+
+    - step: &build
+        name: Build Project
+        script:
+          - npm run build
+        artifacts:
+          - lib/**/*.js
+          - bin/**/*.js
+
+    - step: &validate
+        name: Code Validation
+        script:
+          - echo "Running code validation..."
+          - npm run build
+          - echo "✅ Code validation passed"
+
+    - step: &cdk-synth-dev
+        name: CDK Synth (Development)
+        oidc: true
+        script:
+          - echo "📦 Installing AWS CLI..."
+          - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null
+          - curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          - unzip -q awscliv2.zip
+          - ./aws/install > /dev/null
+          - npm install -g aws-cdk
+          - export AWS_DEFAULT_REGION=$DEV_REGION
+          - export DEV_ACCOUNT_ID=$DEV_ACCOUNT_ID
+          - export DEV_REGION=$DEV_REGION
+          - echo "🔐 Authenticating with OIDC..."
+          - export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" $(aws sts assume-role-with-web-identity --role-arn ${DEV_OIDC_ROLE_ARN} --role-session-name bitbucket-pipeline --web-identity-token $BITBUCKET_STEP_OIDC_TOKEN --duration-seconds 3600 --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text))
+          - echo "🔨 Synthesizing CloudFormation template (Development)..."
+          - ENVIRONMENT=dev cdk synth
+        artifacts:
+          - cdk.out/**
+
+    - step: &cdk-synth-prod
+        name: CDK Synth (Production)
+        oidc: true
+        script:
+          - echo "📦 Installing AWS CLI..."
+          - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null
+          - curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          - unzip -q awscliv2.zip
+          - ./aws/install > /dev/null
+          - npm install -g aws-cdk
+          - export AWS_DEFAULT_REGION=$PROD_REGION
+          - export PROD_ACCOUNT_ID=$PROD_ACCOUNT_ID
+          - export PROD_REGION=$PROD_REGION
+          - echo "🔐 Authenticating with OIDC..."
+          - export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" $(aws sts assume-role-with-web-identity --role-arn ${PROD_OIDC_ROLE_ARN} --role-session-name bitbucket-pipeline --web-identity-token $BITBUCKET_STEP_OIDC_TOKEN --duration-seconds 3600 --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text))
+          - echo "🔨 Synthesizing CloudFormation template (Production)..."
+          - ENVIRONMENT=prod cdk synth
+        artifacts:
+          - cdk.out/**
+
+    - step: &cdk-diff-dev
+        name: CDK Diff (Development)
+        oidc: true
+        script:
+          - echo "📦 Installing AWS CLI..."
+          - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null
+          - curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          - unzip -q awscliv2.zip
+          - ./aws/install > /dev/null
+          - npm install -g aws-cdk
+          - export AWS_DEFAULT_REGION=$DEV_REGION
+          - export DEV_ACCOUNT_ID=$DEV_ACCOUNT_ID
+          - export DEV_REGION=$DEV_REGION
+          - echo "🔐 Authenticating with OIDC..."
+          - export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" $(aws sts assume-role-with-web-identity --role-arn ${DEV_OIDC_ROLE_ARN} --role-session-name bitbucket-pipeline --web-identity-token $BITBUCKET_STEP_OIDC_TOKEN --duration-seconds 3600 --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text))
+          - echo "📊 Showing changes for DEVELOPMENT environment..."
+          - ENVIRONMENT=dev cdk diff || true
+          - echo ""
+          - echo "⚠️  Review the changes above before merging"
+
+    - step: &cdk-diff-prod
+        name: CDK Diff (Production)
+        oidc: true
+        script:
+          - echo "📦 Installing AWS CLI..."
+          - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null
+          - curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          - unzip -q awscliv2.zip
+          - ./aws/install > /dev/null
+          - npm install -g aws-cdk
+          - export AWS_DEFAULT_REGION=$PROD_REGION
+          - export PROD_ACCOUNT_ID=$PROD_ACCOUNT_ID
+          - export PROD_REGION=$PROD_REGION
+          - echo "🔐 Authenticating with OIDC..."
+          - export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" $(aws sts assume-role-with-web-identity --role-arn ${PROD_OIDC_ROLE_ARN} --role-session-name bitbucket-pipeline --web-identity-token $BITBUCKET_STEP_OIDC_TOKEN --duration-seconds 3600 --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text))
+          - echo "📊 Showing changes for PRODUCTION environment..."
+          - ENVIRONMENT=prod cdk diff || true
+          - echo ""
+          - echo "⚠️  Review the changes above before merging"
+
+    - step: &deploy-dev
+        name: Deploy to Development
+        oidc: true
+        trigger: manual
+        script:
+          - echo "📦 Installing AWS CLI..."
+          - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null
+          - curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          - unzip -q awscliv2.zip
+          - ./aws/install > /dev/null
+          - npm install -g aws-cdk
+          - export AWS_DEFAULT_REGION=$DEV_REGION
+          - export DEV_ACCOUNT_ID=$DEV_ACCOUNT_ID
+          - export DEV_REGION=$DEV_REGION
+          - echo "🔐 Authenticating with OIDC..."
+          - export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" $(aws sts assume-role-with-web-identity --role-arn ${DEV_OIDC_ROLE_ARN} --role-session-name bitbucket-pipeline --web-identity-token $BITBUCKET_STEP_OIDC_TOKEN --duration-seconds 3600 --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text))
+          - echo "🚀 Deploying to DEVELOPMENT environment..."
+          - ENVIRONMENT=dev cdk deploy --require-approval never
+          - echo ""
+          - echo "✅ Deployment to development completed successfully"
+
+    - step: &deploy-prod
+        name: Deploy to Production
+        oidc: true
+        trigger: manual
+        script:
+          - echo "📦 Installing AWS CLI..."
+          - apt-get update -qq && apt-get install -y -qq curl unzip > /dev/null
+          - curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          - unzip -q awscliv2.zip
+          - ./aws/install > /dev/null
+          - npm install -g aws-cdk
+          - export AWS_DEFAULT_REGION=$PROD_REGION
+          - export PROD_ACCOUNT_ID=$PROD_ACCOUNT_ID
+          - export PROD_REGION=$PROD_REGION
+          - echo "🔐 Authenticating with OIDC..."
+          - export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" $(aws sts assume-role-with-web-identity --role-arn ${PROD_OIDC_ROLE_ARN} --role-session-name bitbucket-pipeline --web-identity-token $BITBUCKET_STEP_OIDC_TOKEN --duration-seconds 3600 --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text))
+          - echo "🚀 Deploying to PRODUCTION environment..."
+          - ENVIRONMENT=prod cdk deploy --require-approval never
+          - echo ""
+          - echo "✅ Deployment to production completed successfully"
+
+    - step: &validacion-ticket
+        name: Validacion ticket Jira
+        image: alpine:3.19
+        script:
+          - apk add --no-cache curl jq bash git
+
+          - export JIRA_USER="$USER"
+          - export BIT=$BIT_TOKEN
+          - export TAG=$URL_TAG
+
+          - |
+            VALIDACION=$(curl -s -u "$JIRA_USER:$BIT" \
+              "$TAG/v1.0.0/validacion-ticket.sh")
+
+          - |
+            if [ -z "$VALIDACION" ]; then
+                echo "Error con las credenciales, revisar las variables de repositorio."
+                exit 1
+            fi
+
+          - |
+            curl -s -u "$JIRA_USER:$BIT" \
+                "$TAG/v1.0.0/validacion-ticket.sh" \
+                -o validacion.sh
+
+          - chmod +x validacion.sh
+          - ./validacion.sh
+
+    - step: &cambio-ticket
+        name: Cambio estado ticket Jira
+        image: alpine:3.19
+        script:
+          - apk add --no-cache curl jq bash git
+          - export JIRA_USER="$USER"
+          - export BIT=$BIT_TOKEN
+          - export TAG=$URL_TAG
+
+          - |
+            VALIDACION=$(curl -s -u "$JIRA_USER:$BIT" \
+              "$TAG/v1.0.0/validacion-ticket.sh")
+
+          - |
+            if [ -z "$VALIDACION" ]; then
+                echo "Error con las credenciales, revisar las variables de repositorio."
+                exit 1
+            fi
+
+          - |
+            curl -s -u "$JIRA_USER:$BIT" \
+                "$TAG/v1.0.0/cambio-ticket.sh" \
+                -o cambio.sh
+
+          - chmod +x cambio.sh
+          - ./cambio.sh
+
+pipelines:
+  # Pipeline para Pull Requests
+  pull-requests:
+    "**":
+      - step: *install-dependencies
+      - step: *build
+      - step: *validate
+      - parallel:
+          - step: *cdk-synth-dev
+          - step: *cdk-synth-prod
+      - parallel:
+          - step: *cdk-diff-dev
+          - step: *cdk-diff-prod
+
+      ### Jira ticket status validation implementation
+      # In case of failure, check the repository variables:
+      # - USER, TOKEN, BIT_TOKEN, URL, and URL_TAG
+      ### Or just comment out the next step
+      - step: *validacion-ticket
+
+  # Pipeline para rama develop (development)
+  branches:
+    develop:
+      - step: *install-dependencies
+      - step: *build
+      - step: *validate
+      - step: *cdk-synth-dev
+      - step: *cdk-diff-dev
+      - step: *deploy-dev
+
+    # Pipeline para rama main (production)
+    main:
+      - step: *install-dependencies
+      - step: *build
+      - step: *validate
+      - step: *cdk-synth-prod
+      - step: *cdk-diff-prod
+      - step: *deploy-prod
+
+      ### Jira ticket status change implementation
+      # In case of failure, check the repository variables:
+      # - USER, TOKEN, BIT_TOKEN, URL, and URL_TAG (credentials must be valid)
+      ### Or just comment out the next step
+      - step: *cambio-ticket

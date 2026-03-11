@@ -1,0 +1,9 @@
+{
+  "name": "cognito-auth",
+  "version": "1.0.0",
+  "description": "Cognito pre-authentication Lambda trigger that validates users against RDS",
+  "main": "index.js",
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}

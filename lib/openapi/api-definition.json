@@ -1,0 +1,176 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "BkPeru API",
+    "description": "API para la plataforma BK Peru â€” autenticada con Cognito User Pools",
+    "version": "{{stageRoute}}"
+  },
+  "x-amazon-apigateway-request-validators": {
+    "params-only": {
+      "validateRequestBody": false,
+      "validateRequestParameters": true
+    },
+    "full": {
+      "validateRequestBody": true,
+      "validateRequestParameters": true
+    }
+  },
+  "x-amazon-apigateway-gateway-responses": {
+    "DEFAULT_4XX": {
+      "responseParameters": {
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'",
+        "gatewayresponse.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "gatewayresponse.header.Access-Control-Allow-Methods": "'GET,POST,PATCH,PUT,DELETE,OPTIONS'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\": $context.error.messageString, \"requestId\": \"$context.requestId\"}"
+      }
+    },
+    "DEFAULT_5XX": {
+      "responseParameters": {
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'",
+        "gatewayresponse.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "gatewayresponse.header.Access-Control-Allow-Methods": "'GET,POST,PATCH,PUT,DELETE,OPTIONS'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\": $context.error.messageString, \"requestId\": \"$context.requestId\"}"
+      }
+    },
+    "UNAUTHORIZED": {
+      "statusCode": 401,
+      "responseParameters": {
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\": \"Unauthorized\"}"
+      }
+    },
+    "MISSING_AUTHENTICATION_TOKEN": {
+      "statusCode": 403,
+      "responseParameters": {
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\": \"Forbidden\"}"
+      }
+    },
+    "QUOTA_EXCEEDED": {
+      "statusCode": 429,
+      "responseParameters": {
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\": \"Too Many Requests\"}"
+      }
+    },
+    "THROTTLED": {
+      "statusCode": 429,
+      "responseParameters": {
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\": \"Too Many Requests â€” throttled\"}"
+      }
+    }
+  },
+  "paths": {
+    "/api/{proxy+}": {
+      "x-amazon-apigateway-any-method": {
+        "summary": "Proxy all authenticated requests to ECS via VPC Link",
+        "description": "Cognito JWT required. Routes to NLB â†’ ECS Fargate.",
+        "operationId": "proxyAll",
+        "security": [
+          { "CognitoAuthorizer": [] }
+        ],
+        "parameters": [
+          {
+            "name": "proxy",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Success" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized â€” missing or invalid Cognito JWT" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "http_proxy",
+          "httpMethod": "ANY",
+          "uri": "http://{{nlbDnsName}}/api/{proxy}",
+          "connectionType": "VPC_LINK",
+          "connectionId": "{{vpcLinkId}}",
+          "requestParameters": {
+            "integration.request.path.proxy": "method.request.path.proxy"
+          },
+          "passthroughBehavior": "when_no_match",
+          "timeoutInMillis": 29000
+        }
+      },
+      "options": {
+        "summary": "CORS preflight (no auth required)",
+        "parameters": [
+          {
+            "name": "proxy",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CORS preflight",
+            "headers": {
+              "Access-Control-Allow-Origin": { "schema": { "type": "string" } },
+              "Access-Control-Allow-Methods": { "schema": { "type": "string" } },
+              "Access-Control-Allow-Headers": { "schema": { "type": "string" } }
+            },
+            "content": {}
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "requestTemplates": { "application/json": "{\"statusCode\": 200}" },
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PATCH,PUT,DELETE,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "CognitoAuthorizer": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-amazon-apigateway-authtype": "cognito_user_pools",
+        "x-amazon-apigateway-authorizer": {
+          "type": "cognito_user_pools",
+          "providerARNs": ["{{userPoolArn}}"],
+          "identitySource": "method.request.header.Authorization"
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        }
+      }
+    }
+  }
+}
