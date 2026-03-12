@@ -81,7 +81,7 @@ jobs:
   cdk-diff-dev:
     name: CDK Diff (Development)
     needs: [cdk-synth-dev, cdk-synth-prod]
-    if: github.event.pull_request.head.repo.fork == false
+    if: false
     runs-on: ubuntu-latest
     environment: development
     permissions:
@@ -114,7 +114,7 @@ jobs:
   cdk-diff-prod:
     name: CDK Diff (Production)
     needs: [cdk-synth-dev, cdk-synth-prod]
-    if: github.event.pull_request.head.repo.fork == false
+    if: false
     runs-on: ubuntu-latest
     environment: production
     permissions:

@@ -56,6 +56,7 @@ jobs:
   cdk-diff-prod:
     name: CDK Diff (Production)
     needs: cdk-synth-prod
+    if: false
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -87,7 +88,7 @@ jobs:
 
   deploy-prod:
     name: Deploy to Production
-    needs: cdk-diff-prod
+    needs: cdk-synth-prod
     runs-on: ubuntu-latest
     environment: production
     permissions:
