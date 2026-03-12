@@ -42,7 +42,7 @@ jobs:
     name: CDK Synth (Development)
     needs: validate
     runs-on: ubuntu-latest
-      environment: development
+    environment: development
     permissions:
       id-token: write
       contents: read
@@ -70,7 +70,7 @@ jobs:
     name: CDK Synth (Production)
     needs: validate
     runs-on: ubuntu-latest
-      environment: production
+    environment: production
     permissions:
       id-token: write
       contents: read
@@ -98,7 +98,7 @@ jobs:
     name: CDK Diff (Development)
     needs: [cdk-synth-dev, cdk-synth-prod]
     runs-on: ubuntu-latest
-      environment: development
+    environment: development
     permissions:
       id-token: write
       contents: read
@@ -128,7 +128,7 @@ jobs:
     name: CDK Diff (Production)
     needs: [cdk-synth-dev, cdk-synth-prod]
     runs-on: ubuntu-latest
-      environment: production
+    environment: production
     permissions:
       id-token: write
       contents: read
@@ -154,10 +154,6 @@ jobs:
           PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
           PROD_REGION: ${{ secrets.PROD_REGION }}
 
-  # Equivalente a *validacion-ticket
-  # En caso de fallo, verificar los secrets del repositorio:
-  # JIRA_USER, BIT_TOKEN y URL_TAG
-  # O comentar este job si no se usa
   validacion-ticket:
     name: Validacion ticket Jira
     needs: [cdk-diff-dev, cdk-diff-prod]
@@ -174,8 +170,6 @@ jobs:
           chmod +x validacion.sh
           ./validacion.sh
         env:
-          # NOTA: En Bitbucket se usaba $USER, pero en GitHub "USER" es variable reservada.
-          # Renombrar el secret a JIRA_USER en la configuración del repositorio.
           JIRA_USER: ${{ secrets.JIRA_USER }}
           BIT: ${{ secrets.BIT_TOKEN }}
           TAG: ${{ secrets.URL_TAG }}

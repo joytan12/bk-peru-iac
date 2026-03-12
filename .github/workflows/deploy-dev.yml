@@ -38,7 +38,7 @@ jobs:
     name: CDK Synth (Development)
     needs: validate
     runs-on: ubuntu-latest
-      environment: development
+    environment: development
     permissions:
       id-token: write
       contents: read
@@ -66,7 +66,7 @@ jobs:
     name: CDK Diff (Development)
     needs: cdk-synth-dev
     runs-on: ubuntu-latest
-      environment: development
+    environment: development
     permissions:
       id-token: write
       contents: read
@@ -92,9 +92,6 @@ jobs:
           DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
           DEV_REGION: ${{ secrets.DEV_REGION }}
 
-  # Equivalente a trigger: manual de Bitbucket.
-  # Configurar el environment "development" en GitHub con "Required reviewers"
-  # para que requiera aprobación manual antes de ejecutar el deploy.
   deploy-dev:
     name: Deploy to Development
     needs: cdk-diff-dev

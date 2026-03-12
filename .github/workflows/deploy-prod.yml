@@ -38,7 +38,7 @@ jobs:
     name: CDK Synth (Production)
     needs: validate
     runs-on: ubuntu-latest
-      environment: production
+    environment: production
     permissions:
       id-token: write
       contents: read
@@ -66,7 +66,7 @@ jobs:
     name: CDK Diff (Production)
     needs: cdk-synth-prod
     runs-on: ubuntu-latest
-      environment: production
+    environment: production
     permissions:
       id-token: write
       contents: read
@@ -92,9 +92,6 @@ jobs:
           PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
           PROD_REGION: ${{ secrets.PROD_REGION }}
 
-  # Equivalente a trigger: manual de Bitbucket.
-  # Configurar el environment "production" en GitHub con "Required reviewers"
-  # para que requiera aprobación manual antes de ejecutar el deploy.
   deploy-prod:
     name: Deploy to Production
     needs: cdk-diff-prod
@@ -125,10 +122,6 @@ jobs:
           PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
           PROD_REGION: ${{ secrets.PROD_REGION }}
 
-  # Equivalente a *cambio-ticket
-  # En caso de fallo, verificar los secrets del repositorio:
-  # JIRA_USER, BIT_TOKEN y URL_TAG
-  # O comentar este job si no se usa
   cambio-ticket:
     name: Cambio estado ticket Jira
     needs: deploy-prod
@@ -145,8 +138,6 @@ jobs:
           chmod +x cambio.sh
           ./cambio.sh
         env:
-          # NOTA: En Bitbucket se usaba $USER, pero en GitHub "USER" es variable reservada.
-          # Renombrar el secret a JIRA_USER en la configuración del repositorio.
           JIRA_USER: ${{ secrets.JIRA_USER }}
           BIT: ${{ secrets.BIT_TOKEN }}
           TAG: ${{ secrets.URL_TAG }}
