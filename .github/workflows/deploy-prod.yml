@@ -1,0 +1,150 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+
+  validate:
+    name: Code Validation
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - run: |
+          echo "Running code validation..."
+          npm run build
+          echo "✅ Code validation passed"
+
+  cdk-synth-prod:
+    name: CDK Synth (Production)
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.PROD_REGION }}
+      - name: CDK Synth (Production)
+        run: |
+          npm install -g aws-cdk
+          echo "🔨 Synthesizing CloudFormation template (Production)..."
+          ENVIRONMENT=prod cdk synth
+        env:
+          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
+          PROD_REGION: ${{ secrets.PROD_REGION }}
+
+  cdk-diff-prod:
+    name: CDK Diff (Production)
+    needs: cdk-synth-prod
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.PROD_REGION }}
+      - name: CDK Diff (Production)
+        run: |
+          npm install -g aws-cdk
+          echo "📊 Showing changes for PRODUCTION environment..."
+          ENVIRONMENT=prod cdk diff || true
+          echo ""
+          echo "⚠️  Review the changes above before merging"
+        env:
+          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
+          PROD_REGION: ${{ secrets.PROD_REGION }}
+
+  # Equivalente a trigger: manual de Bitbucket.
+  # Configurar el environment "production" en GitHub con "Required reviewers"
+  # para que requiera aprobación manual antes de ejecutar el deploy.
+  deploy-prod:
+    name: Deploy to Production
+    needs: cdk-diff-prod
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.PROD_REGION }}
+      - name: Deploy to Production
+        run: |
+          npm install -g aws-cdk
+          echo "🚀 Deploying to PRODUCTION environment..."
+          ENVIRONMENT=prod cdk deploy --require-approval never
+          echo ""
+          echo "✅ Deployment to production completed successfully"
+        env:
+          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
+          PROD_REGION: ${{ secrets.PROD_REGION }}
+
+  # Equivalente a *cambio-ticket
+  # En caso de fallo, verificar los secrets del repositorio:
+  # JIRA_USER, BIT_TOKEN y URL_TAG
+  # O comentar este job si no se usa
+  cambio-ticket:
+    name: Cambio estado ticket Jira
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Change Jira Ticket Status
+        run: |
+          VALIDACION=$(curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/validacion-ticket.sh")
+          if [ -z "$VALIDACION" ]; then
+            echo "Error con las credenciales, revisar las variables de repositorio."
+            exit 1
+          fi
+          curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/cambio-ticket.sh" -o cambio.sh
+          chmod +x cambio.sh
+          ./cambio.sh
+        env:
+          # NOTA: En Bitbucket se usaba $USER, pero en GitHub "USER" es variable reservada.
+          # Renombrar el secret a JIRA_USER en la configuración del repositorio.
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          BIT: ${{ secrets.BIT_TOKEN }}
+          TAG: ${{ secrets.URL_TAG }}

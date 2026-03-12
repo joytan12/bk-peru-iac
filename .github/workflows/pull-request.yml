@@ -1,0 +1,177 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    name: Build Project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            lib/
+            bin/
+
+  validate:
+    name: Code Validation
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - run: |
+          echo "Running code validation..."
+          npm run build
+          echo "✅ Code validation passed"
+
+  cdk-synth-dev:
+    name: CDK Synth (Development)
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.DEV_REGION }}
+      - name: CDK Synth (Development)
+        run: |
+          npm install -g aws-cdk
+          echo "🔨 Synthesizing CloudFormation template (Development)..."
+          ENVIRONMENT=dev cdk synth
+        env:
+          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
+          DEV_REGION: ${{ secrets.DEV_REGION }}
+
+  cdk-synth-prod:
+    name: CDK Synth (Production)
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.PROD_REGION }}
+      - name: CDK Synth (Production)
+        run: |
+          npm install -g aws-cdk
+          echo "🔨 Synthesizing CloudFormation template (Production)..."
+          ENVIRONMENT=prod cdk synth
+        env:
+          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
+          PROD_REGION: ${{ secrets.PROD_REGION }}
+
+  cdk-diff-dev:
+    name: CDK Diff (Development)
+    needs: [cdk-synth-dev, cdk-synth-prod]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.DEV_REGION }}
+      - name: CDK Diff (Development)
+        run: |
+          npm install -g aws-cdk
+          echo "📊 Showing changes for DEVELOPMENT environment..."
+          ENVIRONMENT=dev cdk diff || true
+          echo ""
+          echo "⚠️  Review the changes above before merging"
+        env:
+          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
+          DEV_REGION: ${{ secrets.DEV_REGION }}
+
+  cdk-diff-prod:
+    name: CDK Diff (Production)
+    needs: [cdk-synth-dev, cdk-synth-prod]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.PROD_REGION }}
+      - name: CDK Diff (Production)
+        run: |
+          npm install -g aws-cdk
+          echo "📊 Showing changes for PRODUCTION environment..."
+          ENVIRONMENT=prod cdk diff || true
+          echo ""
+          echo "⚠️  Review the changes above before merging"
+        env:
+          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
+          PROD_REGION: ${{ secrets.PROD_REGION }}
+
+  # Equivalente a *validacion-ticket
+  # En caso de fallo, verificar los secrets del repositorio:
+  # JIRA_USER, BIT_TOKEN y URL_TAG
+  # O comentar este job si no se usa
+  validacion-ticket:
+    name: Validacion ticket Jira
+    needs: [cdk-diff-dev, cdk-diff-prod]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Jira Ticket
+        run: |
+          VALIDACION=$(curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/validacion-ticket.sh")
+          if [ -z "$VALIDACION" ]; then
+            echo "Error con las credenciales, revisar las variables de repositorio."
+            exit 1
+          fi
+          curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/validacion-ticket.sh" -o validacion.sh
+          chmod +x validacion.sh
+          ./validacion.sh
+        env:
+          # NOTA: En Bitbucket se usaba $USER, pero en GitHub "USER" es variable reservada.
+          # Renombrar el secret a JIRA_USER en la configuración del repositorio.
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          BIT: ${{ secrets.BIT_TOKEN }}
+          TAG: ${{ secrets.URL_TAG }}

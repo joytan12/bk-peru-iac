@@ -1,0 +1,124 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    name: Build Project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+
+  validate:
+    name: Code Validation
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - run: |
+          echo "Running code validation..."
+          npm run build
+          echo "✅ Code validation passed"
+
+  cdk-synth-dev:
+    name: CDK Synth (Development)
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.DEV_REGION }}
+      - name: CDK Synth (Development)
+        run: |
+          npm install -g aws-cdk
+          echo "🔨 Synthesizing CloudFormation template (Development)..."
+          ENVIRONMENT=dev cdk synth
+        env:
+          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
+          DEV_REGION: ${{ secrets.DEV_REGION }}
+
+  cdk-diff-dev:
+    name: CDK Diff (Development)
+    needs: cdk-synth-dev
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.DEV_REGION }}
+      - name: CDK Diff (Development)
+        run: |
+          npm install -g aws-cdk
+          echo "📊 Showing changes for DEVELOPMENT environment..."
+          ENVIRONMENT=dev cdk diff || true
+          echo ""
+          echo "⚠️  Review the changes above before merging"
+        env:
+          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
+          DEV_REGION: ${{ secrets.DEV_REGION }}
+
+  # Equivalente a trigger: manual de Bitbucket.
+  # Configurar el environment "development" en GitHub con "Required reviewers"
+  # para que requiera aprobación manual antes de ejecutar el deploy.
+  deploy-dev:
+    name: Deploy to Development
+    needs: cdk-diff-dev
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.DEV_REGION }}
+      - name: Deploy to Development
+        run: |
+          npm install -g aws-cdk
+          echo "🚀 Deploying to DEVELOPMENT environment..."
+          ENVIRONMENT=dev cdk deploy --require-approval never
+          echo ""
+          echo "✅ Deployment to development completed successfully"
+        env:
+          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
+          DEV_REGION: ${{ secrets.DEV_REGION }}
