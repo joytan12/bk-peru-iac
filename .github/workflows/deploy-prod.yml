@@ -48,11 +48,13 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-      - run: npm ci && npm run build
+      - run: |
+          npm ci
+          npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION || 'us-east-1' }}
+          aws-region: us-east-1
       - name: CDK Synth (Production)
         run: |
           npm install -g aws-cdk
@@ -76,11 +78,13 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-      - run: npm ci && npm run build
+      - run: |
+          npm ci
+          npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION || 'us-east-1' }}
+          aws-region: us-east-1
       - name: CDK Diff (Production)
         run: |
           npm install -g aws-cdk
@@ -106,11 +110,13 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-      - run: npm ci && npm run build
+      - run: |
+          npm ci
+          npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION || 'us-east-1' }}
+          aws-region: us-east-1
       - name: Deploy to Production
         run: |
           npm install -g aws-cdk
