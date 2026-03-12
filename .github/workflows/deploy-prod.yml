@@ -86,54 +86,54 @@ jobs:
           PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
           PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
-  deploy-prod:
-    name: Deploy to Production
-    needs: cdk-synth-prod
-    runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      - run: |
-          npm ci
-          npm run build
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: us-east-1
-      - name: Deploy to Production
-        run: |
-          npm install -g aws-cdk
-          echo "Deploying to PRODUCTION environment..."
-          ENVIRONMENT=prod cdk deploy --require-approval never
-          echo ""
-          echo "Deployment to production completed successfully"
-        env:
-          PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
+  # deploy-prod:
+  #   name: Deploy to Production
+  #   needs: cdk-synth-prod
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '18'
+  #         cache: 'npm'
+  #     - run: |
+  #         npm ci
+  #         npm run build
+  #     - uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+  #         aws-region: us-east-1
+  #     - name: Deploy to Production
+  #       run: |
+  #         npm install -g aws-cdk
+  #         echo "Deploying to PRODUCTION environment..."
+  #         ENVIRONMENT=prod cdk deploy --require-approval never
+  #         echo ""
+  #         echo "Deployment to production completed successfully"
+  #       env:
+  #         PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+  #         PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
-  cambio-ticket:
-    name: Cambio estado ticket Jira
-    needs: deploy-prod
-    runs-on: ubuntu-latest
-    steps:
-      - name: Change Jira Ticket Status
-        run: |
-          VALIDACION=$(curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/validacion-ticket.sh")
-          if [ -z "$VALIDACION" ]; then
-            echo "Error con las credenciales, revisar las variables de repositorio."
-            exit 1
-          fi
-          curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/cambio-ticket.sh" -o cambio.sh
-          chmod +x cambio.sh
-          ./cambio.sh
-        env:
-          JIRA_USER: ${{ secrets.JIRA_USER }}
-          BIT: ${{ secrets.BIT_TOKEN }}
-          TAG: ${{ secrets.URL_TAG }}
+  # cambio-ticket:
+  #   name: Cambio estado ticket Jira
+  #   needs: deploy-prod
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Change Jira Ticket Status
+  #       run: |
+  #         VALIDACION=$(curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/validacion-ticket.sh")
+  #         if [ -z "$VALIDACION" ]; then
+  #           echo "Error con las credenciales, revisar las variables de repositorio."
+  #           exit 1
+  #         fi
+  #         curl -s -u "$JIRA_USER:$BIT" "$TAG/v1.0.0/cambio-ticket.sh" -o cambio.sh
+  #         chmod +x cambio.sh
+  #         ./cambio.sh
+  #       env:
+  #         JIRA_USER: ${{ secrets.JIRA_USER }}
+  #         BIT: ${{ secrets.BIT_TOKEN }}
+  #         TAG: ${{ secrets.URL_TAG }}
