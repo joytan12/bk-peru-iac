@@ -52,7 +52,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
             role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
-            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
+          aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION || 'us-east-1' }}
       - name: CDK Synth (Development)
         run: |
           npm install -g aws-cdk
@@ -80,7 +80,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
             role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
-            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
+          aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION || 'us-east-1' }}
       - name: CDK Diff (Development)
         run: |
           npm install -g aws-cdk
@@ -110,7 +110,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
             role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
-            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
+          aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION || 'us-east-1' }}
       - name: Deploy to Development
         run: |
           npm install -g aws-cdk
