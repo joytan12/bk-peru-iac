@@ -1,4 +1,4 @@
-name: Pull Request Checks
+﻿name: Pull Request Checks
 
 on:
   pull_request:
@@ -36,7 +36,7 @@ jobs:
       - run: |
           echo "Running code validation..."
           npm run build
-          echo "✅ Code validation passed"
+          echo "âœ… Code validation passed"
 
   cdk-synth-dev:
     name: CDK Synth (Development)
@@ -56,16 +56,16 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-            role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
+          role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION || 'us-east-1' }}
       - name: CDK Synth (Development)
         run: |
           npm install -g aws-cdk
-          echo "🔨 Synthesizing CloudFormation template (Development)..."
+          echo "ðŸ”¨ Synthesizing CloudFormation template (Development)..."
           ENVIRONMENT=dev cdk synth
         env:
-            DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
-            DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
+          DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
+          DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
 
   cdk-synth-prod:
     name: CDK Synth (Production)
@@ -85,16 +85,16 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-            role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+          role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION || 'us-east-1' }}
       - name: CDK Synth (Production)
         run: |
           npm install -g aws-cdk
-          echo "🔨 Synthesizing CloudFormation template (Production)..."
+          echo "ðŸ”¨ Synthesizing CloudFormation template (Production)..."
           ENVIRONMENT=prod cdk synth
         env:
-            PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
-            PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
+          PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+          PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   cdk-diff-dev:
     name: CDK Diff (Development)
@@ -114,18 +114,18 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-            role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
+          role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION || 'us-east-1' }}
       - name: CDK Diff (Development)
         run: |
           npm install -g aws-cdk
-          echo "📊 Showing changes for DEVELOPMENT environment..."
+          echo "ðŸ“Š Showing changes for DEVELOPMENT environment..."
           ENVIRONMENT=dev cdk diff || true
           echo ""
-          echo "⚠️  Review the changes above before merging"
+          echo "âš ï¸  Review the changes above before merging"
         env:
-            DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
-            DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
+          DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
+          DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
 
   cdk-diff-prod:
     name: CDK Diff (Production)
@@ -145,18 +145,18 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-            role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+          role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION || 'us-east-1' }}
       - name: CDK Diff (Production)
         run: |
           npm install -g aws-cdk
-          echo "📊 Showing changes for PRODUCTION environment..."
+          echo "ðŸ“Š Showing changes for PRODUCTION environment..."
           ENVIRONMENT=prod cdk diff || true
           echo ""
-          echo "⚠️  Review the changes above before merging"
+          echo "âš ï¸  Review the changes above before merging"
         env:
-            PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
-            PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
+          PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+          PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   validacion-ticket:
     name: Validacion ticket Jira
@@ -178,3 +178,4 @@ jobs:
           JIRA_USER: ${{ secrets.JIRA_USER }}
           BIT: ${{ secrets.BIT_TOKEN }}
           TAG: ${{ secrets.URL_TAG }}
+
