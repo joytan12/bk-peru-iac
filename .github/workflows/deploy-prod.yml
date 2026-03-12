@@ -38,10 +38,6 @@ jobs:
     name: CDK Synth (Production)
     needs: validate
     runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,18 +47,11 @@ jobs:
       - run: |
           npm ci
           npm run build
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: us-east-1
       - name: CDK Synth (Production)
         run: |
           npm install -g aws-cdk
           echo "Synthesizing CloudFormation template (Production)..."
           ENVIRONMENT=prod cdk synth
-        env:
-          PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   cdk-diff-prod:
     name: CDK Diff (Production)

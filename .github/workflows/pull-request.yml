@@ -43,10 +43,6 @@ jobs:
     needs: validate
     if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
-    environment: development
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,28 +52,17 @@ jobs:
       - run: |
           npm ci
           npm run build
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
       - name: CDK Synth (Development)
         run: |
           npm install -g aws-cdk
           echo "Synthesizing CloudFormation template (Development)..."
           ENVIRONMENT=dev cdk synth
-        env:
-          DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
-          DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
 
   cdk-synth-prod:
     name: CDK Synth (Production)
     needs: validate
     if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -87,18 +72,11 @@ jobs:
       - run: |
           npm ci
           npm run build
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
       - name: CDK Synth (Production)
         run: |
           npm install -g aws-cdk
           echo "Synthesizing CloudFormation template (Production)..."
           ENVIRONMENT=prod cdk synth
-        env:
-          PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   cdk-diff-dev:
     name: CDK Diff (Development)
