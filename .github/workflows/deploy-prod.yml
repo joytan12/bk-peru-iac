@@ -1,4 +1,4 @@
-﻿name: Deploy to Production
+name: Deploy to Production
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       - run: |
           echo "Running code validation..."
           npm run build
-          echo "âœ… Code validation passed"
+          echo "Code validation passed"
 
   cdk-synth-prod:
     name: CDK Synth (Production)
@@ -58,7 +58,7 @@ jobs:
       - name: CDK Synth (Production)
         run: |
           npm install -g aws-cdk
-          echo "ðŸ”¨ Synthesizing CloudFormation template (Production)..."
+          echo "Synthesizing CloudFormation template (Production)..."
           ENVIRONMENT=prod cdk synth
         env:
           PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
@@ -88,10 +88,10 @@ jobs:
       - name: CDK Diff (Production)
         run: |
           npm install -g aws-cdk
-          echo "ðŸ“Š Showing changes for PRODUCTION environment..."
+          echo "Showing changes for PRODUCTION environment..."
           ENVIRONMENT=prod cdk diff || true
           echo ""
-          echo "âš ï¸  Review the changes above before merging"
+          echo "Review the changes above before merging"
         env:
           PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
           PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
@@ -120,10 +120,10 @@ jobs:
       - name: Deploy to Production
         run: |
           npm install -g aws-cdk
-          echo "ðŸš€ Deploying to PRODUCTION environment..."
+          echo "Deploying to PRODUCTION environment..."
           ENVIRONMENT=prod cdk deploy --require-approval never
           echo ""
-          echo "âœ… Deployment to production completed successfully"
+          echo "Deployment to production completed successfully"
         env:
           PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
           PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
@@ -147,4 +147,3 @@ jobs:
           JIRA_USER: ${{ secrets.JIRA_USER }}
           BIT: ${{ secrets.BIT_TOKEN }}
           TAG: ${{ secrets.URL_TAG }}
-
