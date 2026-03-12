@@ -41,6 +41,7 @@ jobs:
   cdk-synth-dev:
     name: CDK Synth (Development)
     needs: validate
+      if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     environment: development
     permissions:
@@ -55,20 +56,21 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.DEV_REGION }}
+            role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
       - name: CDK Synth (Development)
         run: |
           npm install -g aws-cdk
           echo "🔨 Synthesizing CloudFormation template (Development)..."
           ENVIRONMENT=dev cdk synth
         env:
-          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
-          DEV_REGION: ${{ secrets.DEV_REGION }}
+            DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
+            DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
 
   cdk-synth-prod:
     name: CDK Synth (Production)
     needs: validate
+      if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -83,20 +85,21 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.PROD_REGION }}
+            role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
       - name: CDK Synth (Production)
         run: |
           npm install -g aws-cdk
           echo "🔨 Synthesizing CloudFormation template (Production)..."
           ENVIRONMENT=prod cdk synth
         env:
-          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ secrets.PROD_REGION }}
+            PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+            PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   cdk-diff-dev:
     name: CDK Diff (Development)
     needs: [cdk-synth-dev, cdk-synth-prod]
+      if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     environment: development
     permissions:
@@ -111,8 +114,8 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.DEV_REGION }}
+            role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
       - name: CDK Diff (Development)
         run: |
           npm install -g aws-cdk
@@ -121,12 +124,13 @@ jobs:
           echo ""
           echo "⚠️  Review the changes above before merging"
         env:
-          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
-          DEV_REGION: ${{ secrets.DEV_REGION }}
+            DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
+            DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
 
   cdk-diff-prod:
     name: CDK Diff (Production)
     needs: [cdk-synth-dev, cdk-synth-prod]
+      if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -141,8 +145,8 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.PROD_REGION }}
+            role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
       - name: CDK Diff (Production)
         run: |
           npm install -g aws-cdk
@@ -151,12 +155,13 @@ jobs:
           echo ""
           echo "⚠️  Review the changes above before merging"
         env:
-          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ secrets.PROD_REGION }}
+            PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+            PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   validacion-ticket:
     name: Validacion ticket Jira
     needs: [cdk-diff-dev, cdk-diff-prod]
+      if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     steps:
       - name: Validate Jira Ticket

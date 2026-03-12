@@ -51,16 +51,16 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.DEV_REGION }}
+            role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
       - name: CDK Synth (Development)
         run: |
           npm install -g aws-cdk
           echo "🔨 Synthesizing CloudFormation template (Development)..."
           ENVIRONMENT=dev cdk synth
         env:
-          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
-          DEV_REGION: ${{ secrets.DEV_REGION }}
+            DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
+            DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
 
   cdk-diff-dev:
     name: CDK Diff (Development)
@@ -79,8 +79,8 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.DEV_REGION }}
+            role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
       - name: CDK Diff (Development)
         run: |
           npm install -g aws-cdk
@@ -89,8 +89,8 @@ jobs:
           echo ""
           echo "⚠️  Review the changes above before merging"
         env:
-          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
-          DEV_REGION: ${{ secrets.DEV_REGION }}
+            DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
+            DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
 
   deploy-dev:
     name: Deploy to Development
@@ -109,8 +109,8 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.DEV_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.DEV_REGION }}
+            role-to-assume: ${{ vars.DEV_OIDC_ROLE_ARN || secrets.DEV_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.DEV_REGION || secrets.DEV_REGION }}
       - name: Deploy to Development
         run: |
           npm install -g aws-cdk
@@ -119,5 +119,5 @@ jobs:
           echo ""
           echo "✅ Deployment to development completed successfully"
         env:
-          DEV_ACCOUNT_ID: ${{ secrets.DEV_ACCOUNT_ID }}
-          DEV_REGION: ${{ secrets.DEV_REGION }}
+            DEV_ACCOUNT_ID: ${{ vars.DEV_ACCOUNT_ID || secrets.DEV_ACCOUNT_ID }}
+            DEV_REGION: ${{ vars.DEV_REGION || secrets.DEV_REGION }}

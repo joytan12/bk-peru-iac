@@ -51,16 +51,16 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.PROD_REGION }}
+            role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
       - name: CDK Synth (Production)
         run: |
           npm install -g aws-cdk
           echo "🔨 Synthesizing CloudFormation template (Production)..."
           ENVIRONMENT=prod cdk synth
         env:
-          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ secrets.PROD_REGION }}
+            PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+            PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   cdk-diff-prod:
     name: CDK Diff (Production)
@@ -79,8 +79,8 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.PROD_REGION }}
+            role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
       - name: CDK Diff (Production)
         run: |
           npm install -g aws-cdk
@@ -89,8 +89,8 @@ jobs:
           echo ""
           echo "⚠️  Review the changes above before merging"
         env:
-          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ secrets.PROD_REGION }}
+            PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+            PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   deploy-prod:
     name: Deploy to Production
@@ -109,8 +109,8 @@ jobs:
       - run: npm ci && npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.PROD_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.PROD_REGION }}
+            role-to-assume: ${{ vars.PROD_OIDC_ROLE_ARN || secrets.PROD_OIDC_ROLE_ARN }}
+            aws-region: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
       - name: Deploy to Production
         run: |
           npm install -g aws-cdk
@@ -119,8 +119,8 @@ jobs:
           echo ""
           echo "✅ Deployment to production completed successfully"
         env:
-          PROD_ACCOUNT_ID: ${{ secrets.PROD_ACCOUNT_ID }}
-          PROD_REGION: ${{ secrets.PROD_REGION }}
+            PROD_ACCOUNT_ID: ${{ vars.PROD_ACCOUNT_ID || secrets.PROD_ACCOUNT_ID }}
+            PROD_REGION: ${{ vars.PROD_REGION || secrets.PROD_REGION }}
 
   cambio-ticket:
     name: Cambio estado ticket Jira
