@@ -3,5 +3,10 @@
     "us-east-1a",
     "us-east-1b",
     "us-east-1c"
+  ],
+  "availability-zones:account=987654321098:region=us-east-1": [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c"
   ]
 }
